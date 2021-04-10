@@ -1,9 +1,10 @@
 ---
 title: "Covid91 vaccine study Final2021"
-author: "Put your name here!"
-date: "put the date here"
+author: "Anjolie"
+date: "10 April 2021"
 output: 
-    html_document:
+  html_document:
+    number_sections: true
     toc: true
 ---
 
@@ -14,9 +15,131 @@ require(forcats)
 OldData <-read.csv(file="covid91.csv",header=TRUE)
 #recode to remove the annoying "X" from the dataframe
 FinalData <- OldData %>% mutate(infected = recode(infected, aids = "covid", none = "OK" )) %>% select(-one_of("X"))
+
+#separate by gender
+male <- subset(FinalData, sex=="guy")
+female <- subset(FinalData, sex=="gal")
+#separate by drug use
+yes <- subset(FinalData, DrugUser=="yes")
+no <- subset(FinalData, DrugUser=="no")
+#separate by sexual orientation
+straight <- subset(FinalData, LGBTQ=="straight")
+gay <- subset(FinalData, LGBTQ=="gay")
 ```
 
 # Introduction
 
-A new  preventative vaccine (covid91) is under test in clinical trials. Given the nature of this vaccine it is suspected that the drug may exhibit different effectiveness across the variety of subpopulations tracked. Consider population subgroups by gender( guys and gals), drug use, and sexual orientation. Write a complete report that separately considers this drug for each subgroup and your recommendations as to whether people in the subgroup should take the vaccine. Structure your report in four sections each devoted to one of the four subgroups, use null and alternative hypothesis statements and correct statistical verbage when referencing p-values in conclusions.
+A new  preventative vaccine (covid91) is under test in clinical trials. Given the nature of this vaccine, it's suspected that the drug may exhibit different effectiveness across the variety of subpopulations tracked. Consider population subgroups consisting of Males, Females, just the drug users, and just those in the LGBTQ community. Write a complete report that separately considers this drug for each subgroup and your recommendations as to whether people in the subgroup should take the vaccine. Structure your report in four sections each devoted to one of the four subgroups, use null and alternative hypothesis statements and correct statistical verbage when referencing p-values in conclusions.  
 
+# Methods
+
+# Gender
+
+## Males
+```{r}
+graphMale <- male %>% group_by(infected, treatment) %>% summarize(count=n()) %>% mutate(prcnt=count/sum(count))
+
+basicC <- ggplot(graphMale,aes(x=infected,y=count,fill=treatment)) 
+basicC + geom_bar(stat="identity",position="dodge") + ggtitle("Male subgroup \n count")
+
+basicCC <- ggplot(graphMale,aes(x=infected,y=prcnt*100,fill=treatment)) 
+basicCC + geom_bar(stat="identity", position = "dodge") + ggtitle("Male subgroup \n percent")
+```
+  
+These results suggest that the vaccine is harmful.  
+```{r}
+maleTable <- xtabs(~treatment + infected, data=male)
+rowPerc(maleTable)
+colPerc(maleTable)
+```
+  
+The amount of people with Covid is small in both the placebo and vaccinated groups. However, more than half of the people with Covid were vaccinated, while more than half of the people who were OK got the placebo. This suggests that the vaccine is harmful.  
+```{r}
+chisq.test(maleTable)
+chisqtestGC(maleTable)
+fisher.test(maleTable)
+```
+The alternate hypothesis is that infection and treatment have some correlation. With low p- values at ~0.0006, the null hypothesis (that infection and treatment are unrelated) is rejected. In fact, vaccinating males seems to make them more vulnerable to Covid.  
+
+## Females
+```{r}
+graphFemale <- female %>% group_by(infected, treatment) %>% summarize(count=n()) %>% mutate(prcnt=count/sum(count))
+
+basicC <- ggplot(graphFemale,aes(x=infected,y=count,fill=treatment)) 
+basicC + geom_bar(stat="identity",position="dodge") + ggtitle("Female subgroup \n count")
+
+basicCC <- ggplot(graphFemale,aes(x=infected,y=prcnt*100,fill=treatment)) 
+basicCC + geom_bar(stat="identity", position = "dodge") + ggtitle("Female subgroup \n percent")
+```
+  
+The drug seems to be far more effective on females, because those with covid were far more likely to have taken the placebo.  
+```{r}
+femaleTable <- xtabs(~treatment + infected, data=female)
+rowPerc(femaleTable)
+colPerc(femaleTable)
+```
+
+```{r}
+chisq.test(femaleTable)
+chisqtestGC(femaleTable)
+fisher.test(femaleTable)
+```
+  The chi-squared statistic here (66.43) is far greater than in the male subgroup (11.721), suggesting the greater effectiveness on females is a more significant deviation from the expectation of the null.  
+  
+# Drug Use
+
+## Drug users
+```{r}
+graphDrug <- yes %>% group_by(infected, treatment) %>% summarize(count=n()) %>% mutate(prcnt=count/sum(count))
+
+basicC <- ggplot(graphDrug,aes(x=infected,y=count,fill=treatment)) 
+basicC + geom_bar(stat="identity",position="dodge") + ggtitle("Drug user subgroup \n count")
+
+basicCC <- ggplot(graphDrug,aes(x=infected,y=prcnt*100,fill=treatment)) 
+basicCC + geom_bar(stat="identity", position = "dodge") + ggtitle("Drug user subgroup \n percent")
+```  
+  
+The vaccine seems to be very effective on drug users, although they might have been given more placebos than other subgroups. This data also doesn't differentiate what drugs are being used; hormone therapy treatment, for example, might make someone more or less susceptible than other drugs. This  requires more study.  
+```{r}
+drugTable <- xtabs(~treatment + infected, data=yes)
+rowPerc(drugTable)
+colPerc(drugTable)
+```
+  
+In both the "covid" and "OK" categories, more drug users were given placebos than vaccines; it's unknown if this was a fluke or a deliberate decision (to avoid the vaccine interacting with other drugs). Those who were given the vaccine, however, had a greater percentage (96.37) that were okay than who were given the placebo (93.54).  
+```{r}
+chisq.test(drugTable)
+chisqtestGC(drugTable)
+fisher.test(drugTable)
+```
+  
+A p-value between 0.0023 and 0.003 (both less than 0.05) suggests that the null hypothesis (that infection and treatment have no correlation) is rejected. The odds ratio of 0.5455 is reliable since the upper barrier (0.8194) is less than 1, so there's no doubt that the alternate hypothesis is correct. 
+# Sexual Orientation
+## Gays
+```{r}
+graphGay <- gay %>% group_by(infected, treatment) %>% summarize(count=n()) %>% mutate(prcnt=count/sum(count))
+
+basicC <- ggplot(graphGay,aes(x=infected,y=count,fill=treatment)) 
+basicC + geom_bar(stat="identity",position="dodge") + ggtitle("Gay subgroup \n count")
+
+basicCC <- ggplot(graphGay,aes(x=infected,y=prcnt*100,fill=treatment)) 
+basicCC + geom_bar(stat="identity", position = "dodge") + ggtitle("Gay subgroup \n percent")
+```
+  
+The vaccine is incredibly ineffective here; more than 60% of the gays who got Covid were given the drug. It's unknown if this is a fluke or due to more gay people being given the vaccine.  
+```{r}
+gayTable <- xtabs(~treatment + infected, data=gay)
+rowPerc(gayTable)
+colPerc(gayTable)
+```
+Covid is clearly associated with the vaccine, and the placebo generally results in the patient not contracting it. Thus, this vaccine is harmful to those in the LGBTQ community, for an unknown reason.  
+```{r}
+chisq.test(gayTable)
+chisqtestGC(gayTable)
+fisher.test(gayTable)
+```
+  
+The odds ratio is more than 1 (with a lower barrier of 1.6337) and p- value is much less than 0.05 (at 0.000005741), meaning that the null hypothesis (that infection and treatment are not correlated) can be rejected. An odds ratio of ~2.4922 means that those in the LGBTQ community are much more likely to get Covid than expected.  
+
+# Conclusion
+The vaccine is harmful to males and those in the LGBTQ community; but it's effective for females and drug users. 
